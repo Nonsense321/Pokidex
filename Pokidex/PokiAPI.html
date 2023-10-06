@@ -1,0 +1,139 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokédex</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+</head>
+
+<body class="bg-yellow-300 flex h-screen ">
+    <div class="pokemon-logo"></div>
+    <div id="app" class="container mx-auto mt-8 p-4 relative">
+        <div>
+            <img src="https://archives.bulbagarden.net/media/upload/4/4b/Pok%C3%A9dex_logo.png" alt="Pokemon Logo" class="w-90 h-50 mr-2">
+        </div>
+        <div class="flex mb-4 ">
+            <input v-model="searchQuery" @input="searchPokemon" class="w-64 p-2 rounded-l focus:outline-none text bg-white" placeholder="Find Pokemon!">
+        </div>
+        <div v-if="loading" class="text-center">
+            Loading...
+        </div>
+        <div v-else>
+            <div v-if="pokemon" class="bg-white rounded-lg p-4">
+                <h2 class="text-5xl font-semibold">{{ pokemon.name }}</h2> 
+                <img :src="pokemon.imageUrl" :alt="pokemon.name" class="mx-auto mt-4" style="max-width: 200px; float: right">
+                <h3 class="text-xl font-semibold mt-4">Characteristics:</h3>
+                <ul>
+                    <li v-for="characteristic in pokemon.characteristics" :key="characteristic">{{ characteristic }}</li>
+                </ul>
+                <h3 class="text-xl font-semibold mt-4">Abilities:</h3>
+                <ul>
+                    <li v-for="ability in pokemon.abilities" :key="ability">{{ ability }}</li>
+                </ul>
+                <h3 class="text-xl font-semibold mt-4">Types:</h3>
+                <ul>
+                    <li v-for="type in pokemon.types" :key="type">{{ type }}</li>
+                </ul>
+                
+            </div>
+            <div v-else class="bg-white rounded-lg p-4">
+                <img src="img/pokemon.png" alt="Uh-Oh! Find Pokemon!!!" class="mx-auto mt-4" style="max-width: 400px;">
+            </div>
+        </div>
+
+        <div class="fixed bottom-0 left-0 right-0 bg-custom-color py-4">
+            <div class="mt-5 flex justify-center space-x-4">
+                
+            <button @click="prevPokemon" class="bg-blue-500 text-white font-medium py-2 px-4 rounded w32">Previous</button>
+
+            <button @click="nextPokemon" class="bg-blue-500 text-white font-medium py-2 px-4 rounded w32">Next</button>
+        </div>
+    </div>
+    <script type="text/javascript">
+        const app = Vue.createApp({
+            data() {
+                return {
+                    searchQuery: '',
+                    loading: false,
+                    pokemon: null,
+                    currentPokemonId: 1,
+                };
+            },
+            computed: {
+                pokedexApiUrl() {
+                    return `https://pokeapi.co/api/v2/pokemon/${this.currentPokemonId}`;
+                },
+            },
+            methods: {
+                async searchPokemon() {
+                    if (this.searchQuery) {
+                        this.loading = true;
+                        try {
+                            const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${this.searchQuery.toLowerCase()}`);
+                            if (!response.ok) {
+                                throw new Error(`ERROR! Status: ${response.status}`);
+                            }
+                            const data = await response.json();
+                            this.pokemon = {
+                                name: data.name,
+                                imageUrl: data.sprites.other['official-artwork'].front_default,
+                                characteristics: data.types.map(type => type.type.name),
+                                abilities: data.abilities.map(ability => ability.ability.name),
+                                types: data.types.map(type => type.type.name),
+                            };
+                        } catch (error) {
+                            console.error(error);
+                        } finally {
+                            this.loading = false;
+                        }
+                    } else {
+                        this.pokemon = null;
+                    }
+                },
+                async nextPokemon() {
+                    this.currentPokemonId += 1;
+                    this.getPokemon();
+                },
+                async prevPokemon() {
+                    if (this.currentPokemonId > 1) {
+                        this.currentPokemonId -= 1;
+                        this.getPokemon();
+                    }
+                },
+                async getPokemon() {
+                    this.loading = true;
+                    try {
+                        const response = await fetch(this.pokedexApiUrl);
+                        if (!response.ok) {
+                            throw new Error(`ERROR! Status: ${response.status}`);
+                        }
+                        const data = await response.json();
+                        this.pokemon = {
+                            name: data.name,
+                            imageUrl: data.sprites.other['official-artwork'].front_default,
+                            characteristics: data.types.map(type => type.type.name),
+                            abilities: data.abilities.map(ability => ability.ability.name),
+                            types: data.types.map(type => type.type.name),
+                        };
+                    } catch (error) {
+                        console.error(error);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+            },
+        });
+
+        app.mount('#app');
+    </script>
+
+    <style>
+        .bg-custom-color {
+            background-color: #FF0000;
+        }
+    </style> 
+
+    </body>
+</html>
